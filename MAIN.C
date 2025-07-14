@@ -72,6 +72,7 @@ int main()
 	}
 
    cv_set_vga_mode();
+   cv_make_default_palette();
 
 	while(!bioskey(1))
 	{
@@ -101,7 +102,7 @@ int main()
 		for(i=0; i<12; i++)
 		{
 			a=edges[i][0]; b=edges[i][1];
-			cv_draw_line(projected[a].x, projected[a].y , projected[b].x, projected[b].y, 1, screenBuffer);
+			cv_draw_line(projected[a].x, projected[a].y , projected[b].x, projected[b].y, 63, screenBuffer);
 		}
 
 		// FPS calculations
