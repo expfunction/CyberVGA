@@ -12,7 +12,7 @@
 #include "cybervga.h"
 #include "cv_math.h"
 #include "cv_rndr.h"
-
+#include "cv_mesh.h"
 
 // Globals
 unsigned long last_fps_time = 0;
@@ -32,18 +32,26 @@ void print_fps(int fps)
 	}
 }
 
-
-// Cube vertices
-CV_Vec3 cube[8] =
+// Test cube as mesh
+CV_Vec3 cube_verts[8]=
 {
-	{ -1, -1, -1 }, { 1, -1, -1 }, { 1, 1, -1 }, { -1, 1, -1 },
-	{ -1, -1,  1 }, { 1, -1,  1 }, { 1, 1,  1 }, { -1, 1,  1 }
+	{-1,-1,-1},
+	{1,-1,-1},
+	{1,1,-1},
+	{-1,1,-1},
+	{-1,-1,1},
+	{1,-1,1},
+	{1,1,1},
+	{-1,1,1}
 };
-
-// Edges
-int edges[12][2] =
+int cube_tris[12][3]=
 {
-	{0,1},{1,2},{2,3},{3,0}, {4,5},{5,6},{6,7},{7,4}, {0,4},{1,5},{2,6},{3,7}
+	{0,1,2},{0,2,3},
+	{4,5,6},{4,6,7},
+	{0,1,5},{0,5,4},
+	{3,2,6},{3,6,7},
+	{0,3,7},{0,7,4},
+	{1,2,6},{1,6,5}
 };
 
 // MAIN
@@ -53,9 +61,11 @@ int main()
 	Byte far* screenBuffer;
 	int angleX=30, angleY=30, angleZ=30, i, a, b;
 	float angleXf = 30.0f, angleYf = 30.0f, angleZf = 30.0f;
-	float roation_speed = 90.0f;	// degs/sec
+	float roation_speed = 90.0f;							// degs/sec
+	float dx1, dx2, dy1, dy2, cross;						// Backface culling
 	CV_Vec3 transformed[8];
 	CV_Vec2 projected[8];
+	CV_Mesh testCube;
 
 	// Timing
 	clock_t last_time = clock();
@@ -71,8 +81,11 @@ int main()
 		exit(1);
 	}
 
-   cv_set_vga_mode();
-   cv_make_default_palette();
+	cv_set_vga_mode();
+	cv_make_default_palette();
+
+	//init test mesh
+	cv_mesh_init(&testCube, cube_verts, 8, cube_tris, 12);
 
 	while(!bioskey(1))
 	{
@@ -86,23 +99,34 @@ int main()
 	   // Update rotation based on time
 	   angleXf += 50.0f * deltaTime;
 	   angleYf += 32.0f * deltaTime;
-	   angleZf += 90.0f * deltaTime;
+	   //angleZf += 0.0f * deltaTime;
 	   angleX = ((int)angleXf) % CV_TABLESIZE;
 	   angleY = ((int)angleYf) % CV_TABLESIZE;
 	   angleZ = ((int)angleZf) % CV_TABLESIZE;
 
 		// Transform & project
-		for(i=0; i<8; i++)
+		for(i=0; i < testCube.num_verts; ++i)
 		{
-			transformed[i] = cube[i];
+			transformed[i] = testCube.verts[i];
 			cv_rotate(&transformed[i], angleX, angleY, angleZ);
 			projected[i] = cv_project(transformed[i]);
 		}
-		// Draw edges
-		for(i=0; i<12; i++)
+
+		// Draw tris
+		for(i=0; i<testCube.num_tris; ++i)
 		{
-			a=edges[i][0]; b=edges[i][1];
-			cv_draw_line(projected[a].x, projected[a].y , projected[b].x, projected[b].y, 63, screenBuffer);
+			const CV_Vec2* v0 = &projected[testCube.tris[i][0]];
+			const CV_Vec2* v1 = &projected[testCube.tris[i][1]];
+			const CV_Vec2* v2 = &projected[testCube.tris[i][2]];
+
+			// Backface culling
+			dx1= v1->x - v0->x; dy1= v1->y - v0->y;
+			dx2= v2->x - v0->x; dy2= v2->y - v0->y;
+			cross = dx1*dy2 - dy1*dx2;
+			if(cross<0) continue;
+
+			cv_draw_triangle_fill(v0, v1, v2, 22, screenBuffer);
+			cv_draw_triangle_wire(v0, v1, v2, 63, screenBuffer);
 		}
 
 		// FPS calculations

@@ -24,7 +24,7 @@ CV_Vec2 cv_project(const CV_Vec3 v)
 	CV_Vec2 result;
 	if(denom < 0.1f) denom = 0.1f; // prevent div by zero
 	result.x = (int)((v.x * scale) / denom + CV_WIDTH / 2);
-	result.y = (int)((v.y * scale) / denom + CV_HEIGHT / 2);
+	result.y = (int)(CV_HEIGHT/2 - ((v.y*scale)/denom));
 	return result;
 }
 
