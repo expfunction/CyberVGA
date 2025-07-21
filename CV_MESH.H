@@ -3,8 +3,8 @@
 
 #include "cv_math.h"
 
-#define CV_MESH_MAX_VERTS	128
-#define CV_MESH_MAX_TRIS    256
+#define CV_MESH_MAX_VERTS	128UL
+#define CV_MESH_MAX_TRIS    256UL
 
 typedef struct
 {
@@ -14,5 +14,6 @@ typedef struct
 }CV_Mesh;
 
 void cv_mesh_init(CV_Mesh* mesh, CV_Vec3* verts, int nVerts, const int tris[][3], int nTris);
+int cv_mesh_load(CV_Mesh* mesh, const char* filename);
 
 #endif

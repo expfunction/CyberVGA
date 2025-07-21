@@ -97,8 +97,6 @@ void cv_draw_triangle_fill(const CV_Vec2* v0, const CV_Vec2* v1,
             xa = (int)(fx1 + 0.5f);
             xb = (int)(fx2 + 0.5f);
 			if(xa > xb) { int t = xa; xa = xb; xb = t; }
-			printf("drawing line at %d press!\n",y);
-			getch();
             for(xstart = xa; xstart <= xb; ++xstart)
                 cv_put_pixel(xstart, y, color, buffer);
             fx1 += slope1;
