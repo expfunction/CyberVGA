@@ -16,15 +16,21 @@ void cv_init_trig_tables(void)
 }
 
 // Perspective projection in float
-CV_Vec2 cv_project(const CV_Vec3 v)
+CV_Vec2 cv_project(const CV_Vec3 v, const CV_Camera* cam)
 {
 	float distance = 3.0f;
-	float scale = 120.0f;
-	float denom = v.z + distance;
+	float scale = 90.0f;
+	float vx = v.x - cam->x;
+	float vy = v.y - cam->y;
+	float vz = v.z - cam->z;
+
+	float denom = vz + distance;
+
 	CV_Vec2 result;
+
 	if(denom < 0.1f) denom = 0.1f; // prevent div by zero
-	result.x = (int)((v.x * scale) / denom + CV_WIDTH / 2);
-	result.y = (int)(CV_HEIGHT/2 - ((v.y*scale)/denom));
+	result.x = (int)((vx * scale) / denom + CV_WIDTH / 2);
+	result.y = (int)(CV_HEIGHT/2 - ((vy * scale)/denom));
 	return result;
 }
 

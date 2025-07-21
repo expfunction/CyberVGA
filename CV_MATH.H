@@ -1,6 +1,8 @@
 #ifndef CV_MATH_H
 #define CV_MATH_H
 
+#include "cv_camer.h"
+
 #define CV_PI 3.14159265
 #define CV_TABLESIZE 360
 
@@ -16,6 +18,6 @@ static void swap_vec2(const CV_Vec2** a, const CV_Vec2** b)
 
 void cv_init_trig_tables(void);
 void cv_rotate(CV_Vec3* v, int ax, int ay, int az);
-CV_Vec2 cv_project(const CV_Vec3 v);
+CV_Vec2 cv_project(const CV_Vec3 v, const CV_Camera* cam);
 
 #endif

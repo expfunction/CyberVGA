@@ -55,34 +55,33 @@ void cv_draw_triangle_fill(const CV_Vec2* v0, const CV_Vec2* v1,
 {
 	// Vars
 	const CV_Vec2* pv0 = v0;
-    	const CV_Vec2* pv1 = v1;
-    	const CV_Vec2* pv2 = v2;
-    	int y0, y1, y2, x0, x1, x2, y, xa, xb, xstart, xend;
-    	float slope1, slope2, fx1, fx2;
+	const CV_Vec2* pv1 = v1;
+	const CV_Vec2* pv2 = v2;
+	int y0, y1, y2, x0, x1, x2, y, xa, xb, xstart, xend;
+	float slope1, slope2, fx1, fx2;
 
-    	// Sort vertices by Y (pv0->y <= pv1->y <= pv2->y)
-    	if(pv1->y < pv0->y) swap_vec2(&pv1, &pv0);
-    	if(pv2->y < pv0->y) swap_vec2(&pv2, &pv0);
-    	if(pv2->y < pv1->y) swap_vec2(&pv2, &pv1);
+	// Sort vertices by Y (pv0->y <= pv1->y <= pv2->y)
+	if(pv1->y < pv0->y) swap_vec2(&pv1, &pv0);
+	if(pv2->y < pv0->y) swap_vec2(&pv2, &pv0);
+	if(pv2->y < pv1->y) swap_vec2(&pv2, &pv1);
 
-   	// Convert to ints for scanlines
-    	y0 = (int)(pv0->y + 0.5f);
+	// Convert to ints for scanlines
+	y0 = (int)(pv0->y + 0.5f);
     y1 = (int)(pv1->y + 0.5f);
     y2 = (int)(pv2->y + 0.5f);
     x0 = (int)(pv0->x + 0.5f);
     x1 = (int)(pv1->x + 0.5f);
-    x2 = (int)(pv2->x + 0.5f);
-
-    if(y1 == y0) {
-        // Flat-top
-        slope1 = (float)(x2 - x0) / (y2 - y0);
-        slope2 = (float)(x2 - x1) / (y2 - y1);
-        fx1 = (float)x0;
-        fx2 = (float)x1;
-        for(y = y0; y <= y2; ++y) {
-            xa = (int)(fx1 + 0.5f);
-            xb = (int)(fx2 + 0.5f);
-            if(xa > xb) { int t = xa; xa = xb; xb = t; }
+	x2 = (int)(pv2->x + 0.5f);
+	if(y1 == y0) {
+		// Flat-top
+		slope1 = (float)(x2 - x0) / (y2 - y0);
+		slope2 = (float)(x2 - x1) / (y2 - y1);
+		fx1 = (float)x0;
+		fx2 = (float)x1;
+		for(y = y0; y <= y2; ++y) {
+			xa = (int)(fx1 + 0.5f);
+			xb = (int)(fx2 + 0.5f);
+			if(xa > xb) { int t = xa; xa = xb; xb = t; }
             for(xstart = xa; xstart <= xb; ++xstart)
                 cv_put_pixel(xstart, y, color, buffer);
             fx1 += slope1;
@@ -97,7 +96,9 @@ void cv_draw_triangle_fill(const CV_Vec2* v0, const CV_Vec2* v1,
         for(y = y0; y <= y1; ++y) {
             xa = (int)(fx1 + 0.5f);
             xb = (int)(fx2 + 0.5f);
-            if(xa > xb) { int t = xa; xa = xb; xb = t; }
+			if(xa > xb) { int t = xa; xa = xb; xb = t; }
+			printf("drawing line at %d press!\n",y);
+			getch();
             for(xstart = xa; xstart <= xb; ++xstart)
                 cv_put_pixel(xstart, y, color, buffer);
             fx1 += slope1;
@@ -117,21 +118,21 @@ void cv_draw_triangle_fill(const CV_Vec2* v0, const CV_Vec2* v1,
         for(y = y0; y <= y1; ++y) {
             xa = (int)(fx1 + 0.5f);
             xb = (int)(fx2 + 0.5f);
-            if(xa > xb) { int t = xa; xa = xb; xb = t; }
-            for(xstart = xa; xstart <= xb; ++xstart)
-                cv_put_pixel(xstart, y, color, buffer);
-            fx1 += slope1;
-            fx2 += slope2;
-        }
-        // Fill upper part
-        slope1 = (float)(x2 - x1) / (y2 - y1);
-        slope2 = (float)(x2 - x3) / (y2 - y3);
-        fx1 = (float)x1;
-        fx2 = (float)x3;
-        for(y = y1; y <= y2; ++y) {
-            xa = (int)(fx1 + 0.5f);
-            xb = (int)(fx2 + 0.5f);
-            if(xa > xb) { int t = xa; xa = xb; xb = t; }
+			if(xa > xb) { int t = xa; xa = xb; xb = t; }
+			for(xstart = xa; xstart <= xb; ++xstart)
+				cv_put_pixel(xstart, y, color, buffer);
+			fx1 += slope1;
+			fx2 += slope2;
+		}
+		// Fill upper part
+		slope1 = (float)(x2 - x1) / (y2 - y1);
+		slope2 = (float)(x2 - x3) / (y2 - y3);
+		fx1 = (float)x1;
+		fx2 = (float)x3;
+		for(y = y1; y <= y2; ++y) {
+			xa = (int)(fx1 + 0.5f);
+			xb = (int)(fx2 + 0.5f);
+			if(xa > xb) { int t = xa; xa = xb; xb = t; }
             for(xstart = xa; xstart <= xb; ++xstart)
                 cv_put_pixel(xstart, y, color, buffer);
             fx1 += slope1;
