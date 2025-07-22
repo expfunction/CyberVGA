@@ -48,6 +48,7 @@ int main()
 {
 	Byte far* VGA = (Byte far*)MK_FP(0xA000, 0);
 	Byte far* screenBuffer;
+	Byte far* depthBuffer;
 	int angleX=30, angleY=30, angleZ=30, i, a, b;
 	float angleXf = 30.0f, angleYf = 30.0f, angleZf = 30.0f;
 	float roation_speed = 90.0f;							// degs/sec
@@ -68,10 +69,16 @@ int main()
 		printf("Error! Not enough memory.");
 		exit(1);
 	}
+	depthBuffer = (Byte far*)farmalloc(CV_SCREENRES);
+	if(!depthBuffer)
+	{
+		printf("Error! Not enough memory for depth buffer.");
+		exit(1);
+	}
 
 
 	//load test mesh
-	if(!cv_mesh_load(&testMesh, "SPHERE.OBJ"))
+	if(!cv_mesh_load(&testMesh, "CUBE.OBJ"))
 	{
 		printf("Error loading obj file!\n");
 		goto CV_QUIT;
