@@ -48,17 +48,23 @@ int main()
 {
 	Byte far* VGA = (Byte far*)MK_FP(0xA000, 0);
 	Byte far* screenBuffer;
-	Byte far* depthBuffer;
-	int angleX=30, angleY=30, angleZ=30, i, a, b;
+	int angleX=30, angleY=30, angleZ=30, a, b;
+	unsigned long i=0;
 	float angleXf = 30.0f, angleYf = 30.0f, angleZf = 30.0f;
 	float roation_speed = 90.0f;							// degs/sec
 	CV_Mesh testMesh;
 	CV_Vec3 far* transformed;
 	CV_Vec2 far* projected;
+	int sel=0;
 
 	// Timing
 	clock_t last_time = clock();
 	clock_t last_fps_clock = clock();
+
+
+	// Intro, select mesh
+	printf("\nThis is MS-DOS VGA port of Cyber Engine\nPlease Select Mesh File:\n(1)Cube\n(2)Sphere\n");
+	scanf("%d",&sel);if(!(sel==1 || sel==2)){printf("Wrong selection(%d)!\nDefault cube will be displayed...Press Enter.\n",sel);sel=1;getch();}
 
 	cv_init_trig_tables();
 
@@ -69,19 +75,22 @@ int main()
 		printf("Error! Not enough memory.");
 		exit(1);
 	}
-	depthBuffer = (Byte far*)farmalloc(CV_SCREENRES);
-	if(!depthBuffer)
-	{
-		printf("Error! Not enough memory for depth buffer.");
-		exit(1);
-	}
-
 
 	//load test mesh
-	if(!cv_mesh_load(&testMesh, "CUBE.OBJ"))
+	if(sel==1)
 	{
-		printf("Error loading obj file!\n");
-		goto CV_QUIT;
+		if(!cv_mesh_load(&testMesh, "CUBE.OBJ"))
+		{
+			printf("Error loading obj file!\n");
+			goto CV_QUIT;
+		}
+	} else if(sel==2)
+	{
+		if(!cv_mesh_load(&testMesh, "SPHERE.OBJ"))
+		{
+			printf("Error loading obj file!\n");
+			goto CV_QUIT;
+		}
 	}
 	transformed = (CV_Vec3 far*)farmalloc(sizeof(CV_Vec3)*testMesh.num_verts);
 	projected   = (CV_Vec2 far*)farmalloc(sizeof(CV_Vec2)*testMesh.num_verts);
@@ -109,10 +118,10 @@ int main()
 
 			switch(scanCode)
 			{
-				case KEY_LEFT: angleYf  -= 	5.0f;break;
-				case KEY_RIGHT: angleYf += 	5.0f;break;
-				case KEY_UP: angleXf 	-= 	5.0f;break;
-				case KEY_DOWN: angleXf 	+= 	5.0f;break;
+				case KEY_LEFT: angleYf  -= 	5.0f;if(angleYf<0.0f)angleYf=360.0f;break;
+				case KEY_RIGHT: angleYf += 	5.0f;if(angleYf>360.0f)angleYf=0.0f;break;
+				case KEY_UP: angleXf 	-= 	5.0f;if(angleXf<0.0f)angleXf=360.0f;break;
+				case KEY_DOWN: angleXf 	+= 	5.0f;if(angleXf>360.0f)angleXf=0.0f;break;
 				case KEY_ESC: running = 0;break;
 			}
 		}
@@ -120,9 +129,8 @@ int main()
 		angleX = ((int)angleXf) % CV_TABLESIZE;
 		angleY = ((int)angleYf) % CV_TABLESIZE;
 		angleZ = ((int)angleZf) % CV_TABLESIZE;
-		// Clear screen buffer
+		// Clear screen and depth buffer
 		_fmemset((Byte far*)screenBuffer, 0, CV_SCREENRES);
-
 
 		// Transform & project
 		for(i=0; i < testMesh.num_verts; ++i)
@@ -167,7 +175,11 @@ int main()
 
 			if(dot<0) continue;
 
-			cv_draw_triangle_fill(&projected[i0], &projected[i1], &projected[i2], 22, screenBuffer);
+			t0.z = t0.z-mainCam.z;
+			t1.z = t1.z-mainCam.z;
+			t2.z = t2.z-mainCam.z;
+
+			cv_draw_triangle_fill(&projected[i0], &projected[i1], &projected[i2], 53, screenBuffer);
 			cv_draw_triangle_wire(&projected[i0], &projected[i1], &projected[i2], 63, screenBuffer);
 		}
 		// FPS calculations
