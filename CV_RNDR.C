@@ -1,4 +1,7 @@
+#include <stdio.h>
+#include <string.h>
 #include "cv_rndr.h"
+#include "cv_font.h"
 
 // Draw a pixel
 void cv_put_pixel(int x, int y, Byte color, Byte far *buffer)
@@ -191,4 +194,70 @@ void cv_draw_triangle_fill(const CV_Vec2 *v0, const CV_Vec2 *v1,
 			fx2 += slope2;
 		}
 	}
+}
+
+void cv_draw_char(int x, int y, char c, Byte color, Byte far* buffer)
+{
+	const Byte* glyph = font8x8_basic[c];
+	int i,j;
+
+	for(i=0; i<8; ++i)
+	{
+		Byte row=glyph[i];
+		for(j=0; j<8; ++j)
+		{
+			if(row & ( 1<<j ))
+			{
+				cv_put_pixel(x+j,y+i,color,buffer);
+			}
+		}
+	}
+}
+
+void cv_draw_text(int x, int y, char* str, Byte color, Byte far* buffer)
+{
+	int i=0;
+	while(str[i])
+	{
+		cv_draw_char(x+i*8,y,str[i],color,buffer);
+		i++;
+	}
+}
+
+// Texturing
+int cv_load_texture(CV_Texture* tex, const char* file)
+{
+	FILE* f= fopen(file, "rb");
+	size_t read;
+
+	if(!f) {printf("Error loading texture file!");return -1;}
+
+	read = fread(tex->pixels, 1, CV_TEX_WIDTH*CV_TEX_HEIGHT,f);
+
+	if(read!=CV_TEX_WIDTH*CV_TEX_HEIGHT)
+	{printf("Error loading texture into buffer!");return -1;}
+
+	tex->width = CV_TEX_WIDTH;
+	tex->height = CV_TEX_HEIGHT;
+	return 1;
+}
+
+void cv_draw_texture(const CV_Texture* tex, int x, int y,Byte far* buffer)
+{
+	int xT=0,yT=0;
+
+	for(yT=0;yT<tex->height;++yT)
+	{
+		for(xT=0;xT<tex->width;++xT)
+		{
+			cv_put_pixel(xT+x, yT+y,tex->pixels[yT * tex->width + xT], buffer);
+		}
+	}
+}
+
+void cv_draw_triangle_tex(const CV_Vec2* v0,const CV_Vec2* v1,const CV_Vec2* v2,
+						  const CV_Vec2* t0,const CV_Vec2* t1,const CV_Vec2* t2,
+						  const CV_Texture* tex, Byte far* buffer)
+{
+
 }

@@ -6,11 +6,13 @@
 void cv_io_init(void)
 {
 }
+
 // Return non zero if key pressed
 int cv_io_key_pressed(void)
 {
 	return bioskey(1)!=0;
 }
+
 // Returns pressed key as scancode
 unsigned char cv_io_poll(void)
 {

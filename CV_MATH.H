@@ -1,6 +1,7 @@
 #ifndef CV_MATH_H
 #define CV_MATH_H
 
+#include "cv_fix.h"
 #include "cv_camer.h"
 
 #define CV_PI 3.14159265
@@ -17,7 +18,12 @@ static void swap_vec2(const CV_Vec2** a, const CV_Vec2** b)
 }
 
 void cv_init_trig_tables(void);
+void cv_init_trig_tables_fx(void);
+
+void cv_rotate_fx(CV_Vec3fx* v, int ax, int ay, int az);
 void cv_rotate(CV_Vec3* v, int ax, int ay, int az);
+
+void cv_project_fx(const CV_Vec3fx v, const CV_Camera* cam, int* sx, int* sy);
 CV_Vec2 cv_project(const CV_Vec3 v, const CV_Camera* cam);
 
 #endif
