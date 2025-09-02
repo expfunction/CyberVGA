@@ -1,6 +1,6 @@
 # CyberVGA Engine
 
-MS‑DOS Mode 13h (320×200×8bpp) software 3D and rendering primitives in clean, portable C (C89). CyberVGA targets retro authenticity: it builds with Borland/Turbo C++ 3.x and runs well under DOSBox or on period hardware.
+MS‑DOS Mode 13h (320×200×8bpp) software 3D and rendering primitives in clean, portable C (C89). CyberVGA targets retro authenticity: it builds with Borland/Turbo C++ 4.5 (or above) and runs well under DOSBox or on period hardware.
 
 This README reflects the current source layout (CORE, RNDR, IO, MESH, SPRT, GFX, MIDI) and the presence of low‑level VGA assembly support (CV_HW.ASM).
 
