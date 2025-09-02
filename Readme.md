@@ -1,250 +1,344 @@
-\# CyberVGA Engine: Technical Overview
+# CyberVGA Engine
 
+MS‑DOS Mode 13h (320×200×8bpp) software 3D and rendering primitives in clean, portable C (C89). CyberVGA targets retro authenticity: it builds with Borland/Turbo C++ 3.x and runs well under DOSBox or on period hardware.
 
-
-\## Introduction
-
-
-
-CyberVGA is a modular, retro-style 3D graphics engine targeting MS-DOS and VGA Mode 13h (320x200, 256 colors). Inspired by classic demoscene and early PC game engines, CyberVGA provides clean C interfaces for 3D math, rendering, palette manipulation, and soon, input handling. This document outlines the engine architecture, modules, and design choices for easy expansion and maintenance.
-
-
+This README reflects the current source layout (CORE, RNDR, IO, MESH, SPRT, GFX, MIDI) and the presence of low‑level VGA assembly support (CV_HW.ASM).
 
 ---
 
-
-
-\## Architecture
-
-
-
-CyberVGA is organized into the following modules:
-
-
-
-\* \*\*cybervga\*\*: Core engine API, video mode control, palette routines, memory and constants.
-
-\* \*\*cv\\\_math\*\*: 3D math (vectors, rotation, projection), trigonometric tables, coordinate transforms.
-
-\* \*\*cv\\\_renderer\*\*: Software rasterization, lines, pixels, wireframe objects, future fills.
-
-\* \*\*cv\\\_io\*\*: (planned) Input handling: keyboard, mouse, simple text, etc.
-
-\* \*\*main.c\*\*: High-level application code (game loop, object data, engine calls).
-
-
-
-Each module is defined by a header (`.h`) and implementation (`.c`) file.
-
-
-
----
-
-
-
-\## Module Details
-
-
-
-\### cybervga (core)
-
-
-
-\* Sets VGA graphics and text mode.
-
-\* Allocates/destroys framebuffers.
-
-\* Palette manipulation API.
-
-\* Engine-wide constants (width, height, etc).
-
-
-
-\### cv\\\_math
-
-
-
-\* Defines 3D and 2D vector types.
-
-\* Manages trigonometric lookup tables.
-
-\* Provides rotation and perspective projection.
-
-\* Extensible for additional math (matrix, scaling, etc).
-
-
-
-\### cv\\\_renderer
-
-
-
-\* Pixel and line drawing routines for framebuffers.
-
-\* Accepts any buffer conforming to CyberVGA's layout.
-
-\* Intended for wireframes, raster objects, and future solid/texture fills.
-
-
-
-\### cv\\\_io (planned)
-
-
-
-\* Input polling for keyboard (and mouse, future).
-
-\* Simple on-screen text rendering, menu navigation.
-
-\* Optionally: debug overlay, FPS display.
-
-
+## Table of Contents
+- Introduction
+- Features
+- Directory & Architecture
+- Getting Started
+  - Prerequisites
+  - Build (Borland/Turbo C++)
+  - Build (OpenWatcom 16‑bit)
+  - Assembling CV_HW.ASM
+  - Running under DOSBox
+- Quickstart (Hello, Mode 13h)
+- Module Overview
+  - CORE (cybervga core)
+  - RNDR (renderer)
+  - IO (input, misc I/O)
+  - SPRT (sprites)
+  - MESH (meshes/models)
+  - MIDI (music)
+  - GFX (assets)
+  - CV_HW.ASM (low‑level VGA)
+- Constants, Types, and Memory Model
+- Performance Notes
+- File Formats
+- Roadmap
+- Contributing
+- License/Attribution
 
 ---
 
+## Introduction
 
+CyberVGA is a small, modular engine intended for demoscene‑style effects and early PC game techniques. It wraps the essentials for Mode 13h graphics, palette control, basic math, and a software renderer with an emphasis on clarity and hackability over exotic micro‑optimizations. The code is written in ANSI C (C89/C90) with optional assembly for hotspots.
 
-\## Engine Flow Example
+---
 
+## Features
 
+- VGA Mode 13h initialization/teardown (INT 10h)
+- Double‑buffered drawing to an off‑screen framebuffer
+- Palette/DAC manipulation (fades, custom palettes)
+- Trigonometric lookup tables for fast rotations
+- Vector helpers and basic 3D transforms
+- Pixel and line rasterization (wireframe primitives)
+- Clean headers with a stable `cv_` prefixed API
+- Targets Borland/Turbo C++ 3.x; runs under DOSBox
+
+Planned/in progress:
+- Keyboard/mouse input, on‑screen text (IO)
+- Triangle/polygon fills, spans, texture mapping (RNDR)
+- Camera helpers, matrices, additional math utilities
+- Optional inline ASM and vertical retrace sync
+
+---
+
+## Directory & Architecture
+
+Top‑level layout:
+
+- CORE/ — Core engine: video mode control, palette, memory, constants
+- RNDR/ — Software renderer: pixels, lines, wireframe, future fills/textures
+- IO/ — Input and basic I/O (keyboard/mouse, text, HUD) [work in progress]
+- SPRT/ — Sprite utilities and blitters
+- MESH/ — Mesh/model helpers and sample geometry
+- MIDI/ — Music helpers (e.g., simple MIDI playback scaffolding)
+- GFX/ — Graphics assets and palettes
+- MAIN.C — Example application/game loop that ties modules together
+- CV_HW.ASM — Low‑level VGA routines (e.g., DAC I/O, VRAM copies, timing)
+- PaletteTechniques.md — Notes and examples for palette effects
+- CBE.CVG, CUBE.CVG — Sample engine assets (see File Formats)
+
+Conceptually, an application uses:
+- CORE to set graphics mode and manage buffers/palette.
+- RNDR for rasterization into a backbuffer.
+- IO/SPRT/MESH as needed for input, sprites, and geometry.
+- CV_HW.ASM functions where direct VGA port I/O or optimized moves help.
+
+---
+
+## Getting Started
+
+### Prerequisites
+
+- A DOS‑era C compiler:
+  - Borland C++ 3.1 (recommended) or Turbo C++ 3.0
+  - OpenWatcom 2.x (16‑bit DOS target) — may need small portability shims
+- DOSBox (or real DOS hardware/VM) to run the executable
+
+Suggested tools:
+- DOSBox 0.74‑3+ (or DOSBox‑X)
+- TASM 3.x/5.x if assembling CV_HW.ASM separately
+
+### Build (Borland/Turbo C++)
+
+Command‑line (example; adjust paths):
+
+```bat
+REM Large memory model recommended for far pointers
+tasm32 /ml CV_HW.ASM       REM assemble low-level VGA helpers -> CV_HW.OBJ
+
+bcc32 -ml -O2 -3 ^
+  MAIN.C ^
+  CORE\*.C RNDR\*.C IO\*.C SPRT\*.C MESH\*.C ^
+  CV_HW.OBJ
+```
+
+Borland IDE:
+- Options → Compiler:
+  - Model: Large
+  - Instruction set: 80386 or 80286+
+  - Optimize for Speed, Enable Register Vars
+- Options → Linker:
+  - Produce EXE, map optional
+- Add `MAIN.C`, all module `.C` files, and `CV_HW.OBJ` to the project.
+
+### Build (OpenWatcom 16‑bit)
+
+Note: `farmalloc/_fmemcpy/_fmemset` are Borland extensions. If used, either:
+- Provide compatibility shims/macros, or
+- Replace with Watcom equivalents (e.g., `halloc`, `fmemcpy`, or `memcpy` when safe).
+
+Example:
+
+```bat
+wasm /ml CV_HW.ASM           REM or convert ASM syntax as needed for WASM
+wcl -ml -bt=dos -ox -s -fe=cybervga.exe ^
+  MAIN.C CORE\*.C RNDR\*.C IO\*.C SPRT\*.C MESH\*.C CV_HW.OBJ
+```
+
+### Assembling CV_HW.ASM
+
+Typical TASM invocation:
+
+```bat
+tasm32 /ml /m2 CV_HW.ASM
+```
+
+- `/ml` generates large‑model fixups.
+- `/m2` provides # of multiple passes to resolve forward references.
+- Outputs `CV_HW.OBJ`, which is linked with the C objects.
+- The ASM module exposes small, well‑documented entry points used by CORE/RNDR for VGA port I/O and optimized memory operations.
+
+### Running under DOSBox
+
+1. Copy the built EXE into a directory you will mount in DOSBox.
+2. In DOSBox:
+   ```bat
+   mount c c:\path\to\build
+   c:
+   cybervga.exe
+   ```
+3. Exit the demo with any key if BIOS keyboard polling is used.
+
+Tips:
+- Set `cycles=auto` or a fixed value (e.g., `cycles=12000`) for consistent timing.
+- Palette effects and vsync may vary with DOSBox builds/config.
+
+---
+
+## Quickstart (Hello, Mode 13h)
+
+A minimal loop using the engine’s API:
 
 ```c
+#include "cybervga.h"
+#include "cv_math.h"
+#include "cv_renderer.h"
 
-cv\_set\_vga\_mode();
+int main(void) {
+    Byte far* screenBuffer;
 
-screenBuffer = (Byte far\*)farmalloc(CV\_SCREENRES);
+    cv_set_vga_mode();                 /* INT 10h set mode 13h */
+    screenBuffer = (Byte far*)farmalloc(CV_SCREENRES);
+    if (!screenBuffer) { cv_set_text_mode(); return 1; }
 
-cv\_make\_default\_palette();
+    cv_make_default_palette();         /* Load DAC with a palette */
+    cv_init_trig();                    /* Prepare trig lookups */
 
-cv\_init\_trig();
+    while (!bioskey(1)) {              /* Until a key is pressed */
+        _fmemset(screenBuffer, 0, CV_SCREENRES);
 
+        /* ... math: rotate, project ... */
+        /* ... render: cv_putpixel/cv_draw_line ... */
 
+        _fmemcpy(VGA, screenBuffer, CV_SCREENRES);  /* Flip to VRAM */
+    }
 
-// Main loop
-
-while (!bioskey(1)) {
-
-&nbsp;   \_fmemset(screenBuffer, 0, CV\_SCREENRES);
-
-&nbsp;   // ... math, rotation, projection ...
-
-&nbsp;   // ... draw cube/wireframe with cv\_draw\_line() ...
-
-&nbsp;   \_fmemcpy(VGA, screenBuffer, CV\_SCREENRES);
-
+    farfree(screenBuffer);
+    cv_set_text_mode();                /* Restore text mode */
+    return 0;
 }
-
-farfree(screenBuffer);
-
-cv\_set\_text\_mode();
-
 ```
 
-
-
----
-
-
-
-\## Coding Standards \& Style
-
-
-
-\* Standard C89/C90 (Borland C++ 3.1 compatible).
-
-\* Use `typedef struct` for vectors, points, etc.
-
-\* All module functions use `cv\_` prefix for namespace safety.
-
-\* Expose only necessary data/functions via headers.
-
-\* Avoid global variables unless strictly needed (e.g. static trig tables).
-
-\* Avoid C++ features to maximize DOS C compatibility.
-
-\* Clean function prototypes and documentation in headers.
-
-
+Key points:
+- Draw into an off‑screen buffer to avoid tearing.
+- Blit to `VGA` (0xA000:0000) once per frame.
+- Use trig lookup tables for fast animation.
 
 ---
 
+## Module Overview
 
+### CORE (cybervga core)
 
-\## Extension Points
+Responsibilities:
+- Enter/leave VGA graphics mode
+- Create/destroy framebuffers (caller typically owns memory)
+- Write VGA palette/DAC (default and custom palettes)
+- Provide constants for width/height/pitch and VRAM pointer
 
+Common API (representative):
+- `void cv_set_vga_mode(void);`
+- `void cv_set_text_mode(void);`
+- `void cv_make_default_palette(void);`
+- `extern Byte far* VGA; /* 0xA000:0000 */`
+- `#define CV_WIDTH  320`
+- `#define CV_HEIGHT 200`
+- `#define CV_SCREENRES (CV_WIDTH * CV_HEIGHT)`
 
+### RNDR (renderer)
 
-\* \*\*Rendering\*\*: Add triangle, polygon, texture-mapping routines to `cv\_renderer`.
+Responsibilities:
+- Pixel and line drawing into any CyberVGA‑layout buffer
+- Wireframe primitives; foundation for fills and textures
 
-\* \*\*Math\*\*: Add matrix, camera, physics helpers to `cv\_math`.
+Common API (representative):
+- `void cv_putpixel(Byte far* buf, int x, int y, Byte color);`
+- `void cv_draw_line(Byte far* buf, int x0, int y0, int x1, int y1, Byte color);`
 
-\* \*\*Palette\*\*: Add fades, cycles, LUTs to `cybervga`.
+Implementation notes:
+- Integer Bresenham line routine
+- Buffer‑agnostic: pass off‑screen buffer or `VGA` directly
 
-\* \*\*I/O\*\*: Add menu/input logic in `cv\_io`.
+### IO (input and I/O) — in progress
 
-\* \*\*Optimizations\*\*: Inline asm for speed, vsync, double buffering tweaks.
+Responsibilities:
+- Keyboard polling, optional mouse
+- Simple text rendering and HUD
+- Debug overlay/FPS
 
+### SPRT (sprites)
 
+Responsibilities:
+- Sprite formats and blitters
+- Transparent/opaque copy, clipping helpers
+- Potential palette‑based effects per sprite
+
+### MESH (meshes/models)
+
+Responsibilities:
+- Basic geometry structures
+- Rotation/projection helpers using cv_math
+- Sample models (e.g., CUBE)
+
+### MIDI (music)
+
+Responsibilities:
+- Minimal scaffolding around MIDI playback under DOS
+- Integration toggles for demos that need audio
+
+### GFX (assets)
+
+- Palettes, images, and other graphics resources used by sample programs.
+
+### CV_HW.ASM (low‑level VGA assembly)
+
+Responsibilities:
+- Optimized moves to VGA memory
+- Palette DAC port I/O (0x3C8/0x3C9)
+- Optional vertical retrace sync (timing‑sensitive)
+
+Integration:
+- Built as `CV_HW.OBJ` and linked with the C objects.
+- Callable routines are minimal and documented in comments for cross‑compiler friendliness.
 
 ---
 
+## Constants, Types, and Memory Model
 
+- Video mode: 320×200, 256 colors (Mode 13h)
+- Framebuffer: linear 64,000 bytes (one byte per pixel)
+- Memory model: Large (`-ml`) to allow far data and `farmalloc`
+- Far pointers: Many routines operate on `Byte far*`
+- Palette/DAC: Abstracted writes to ports 0x3C8/0x3C9
 
-\## Example Application Structure
-
-
-
-```
-
-main.c
-
-cybervga.c/h   // Core: mode set, palette, constants
-
-cv\_math.c/h    // Math: vectors, rotation, projection
-
-cv\_renderer.c/h// Render: pixel, line, cube drawing
-
-cv\_io.c/h      // I/O: input, text, menu (future)
-
-```
-
-
+Portability:
+- Borland `farmalloc`, `_fmemcpy`, `_fmemset` appear in examples.
+- Other compilers may need aliases or small substitutions.
 
 ---
 
+## Performance Notes
 
-
-\## Philosophy
-
-
-
-\* \*\*Simplicity first:\*\* Easy-to-follow functions, minimal global state.
-
-\* \*\*Retro authenticity:\*\* All code compiles and runs on 1990s DOS (Borland/Turbo C).
-
-\* \*\*Maximum hackability:\*\* Add, swap, or replace modules with minimal friction.
-
-\* \*\*Clear C separation:\*\* Each module is easy to test, use, or replace.
-
-
+- Prefer backbuffer rendering; single copy to VRAM per frame.
+- Keep inner loops free of function call overhead; consider `static inline` where supported by your compiler.
+- Fixed‑point or integer math outperforms floats on 16‑bit targets.
+- Optional vertical retrace sync reduces tearing but complicates timing.
+- DOSBox timing varies with `cycles`; pick a fixed value for consistent playback.
 
 ---
 
+## File Formats
 
+- .CVG — Engine assets used by the sample program (e.g., `CBE.CVG`, `CUBE.CVG`). These hold simple data consumed by the demo; inspect the corresponding loader/usage in the source tree for exact structure.
 
-\## See also
-
-
-
-\* \\\[CyberVGA Palette Techniques]
-
-\* (Planned) Math/Render/I-O API reference
-
-
+See also:
+- Palette techniques and examples: ./PaletteTechniques.md
 
 ---
 
+## Roadmap
 
+- RNDR: triangles, spans, solid fills, texture mapping, Z handling
+- CORE: palette fades/cycling utilities, LUT helpers
+- IO: keyboard + mouse, text, menus, debug HUD
+- MESH: camera abstraction, matrix utilities
+- ASM: optional routines for hotspots and VSYNC
 
-\# Next: Expand each module's documentation and add usage examples.
+---
 
+## Contributing
 
+- Keep C89 compatibility; avoid C++ constructs.
+- Use the `cv_` prefix for all public functions.
+- Keep headers clean and documented; expose only what’s necessary.
+- Favor readability; document lookup table scales and units.
+- Include testing notes (compiler version, DOSBox config) in pull requests.
 
+---
+
+## License/Attribution
+
+If a LICENSE file is added to the repository, it governs usage. Until then, consider this project all‑rights‑reserved by the author unless explicitly specified otherwise.
+
+---
+
+Happy hacking in glorious 256 colors!
