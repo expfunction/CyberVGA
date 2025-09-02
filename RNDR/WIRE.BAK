@@ -1,0 +1,122 @@
+#include <string.h>
+#include "rndr\wire.h"
+#include "core\fixed.h"
+
+#define SCR_W 320
+#define SCR_H 200
+#define FX_FROM_INT(x) ((i32)((x) << 16))
+
+void wire_clear(Surface8 *s, unsigned char c) { memset(s->back, c, (size_t)(s->w * s->h)); }
+
+void wire_line(Surface8 *s, int x0, int y0, int x1, int y1, unsigned char c)
+{
+    int dx = (x1 > x0) ? (x1 - x0) : (x0 - x1), sx = (x0 < x1) ? 1 : -1;
+    int dy = (y1 > y0) ? (y1 - y0) : (y0 - y1), sy = (y0 < y1) ? 1 : -1;
+    int err = (dx > dy ? dx : -dy) / 2;
+    for (;;)
+    {
+        if ((unsigned)x0 < SCR_W && (unsigned)y0 < SCR_H)
+            s->back[y0 * SCR_W + x0] = c;
+        if (x0 == x1 && y0 == y1)
+            break;
+        {
+            int e2 = err;
+            if (e2 > -dx)
+            {
+                err -= dy;
+                x0 += sx;
+            }
+            if (e2 < dy)
+            {
+                err += dx;
+                y0 += sy;
+            }
+        }
+    }
+}
+
+void wire_rotate_yx(i32 x, i32 y, i32 z, i32 siny, i32 cosy, i32 sinx, i32 cosx,
+                    i32 *ox, i32 *oy, i32 *oz)
+{
+    i32 rx = FX_MUL_16_16(x, cosy) - FX_MUL_16_16(z, siny);
+    i32 rz = FX_MUL_16_16(x, siny) + FX_MUL_16_16(z, cosy);
+    i32 ry = y;
+    *ox = rx;
+    *oy = FX_MUL_16_16(ry, cosx) - FX_MUL_16_16(rz, sinx);
+    *oz = FX_MUL_16_16(ry, sinx) + FX_MUL_16_16(rz, cosx);
+}
+
+void wire_project16_16(i32 x, i32 y, i32 z, i32 f_fx, int *sx, int *sy)
+{
+	i32 px, py, qx, qy;
+	const i32 zmin = FX_FROM_INT(1);
+    if (z < zmin)
+        z = zmin;
+
+    /* px = (x*f)>>16  (Q16) — safe via ASM multiply */
+	px = fx_mul_q16(x, f_fx);
+	py = fx_mul_q16(y, f_fx);
+
+    /* q = (px << 16) / z  (still Q16) — safe via ASM divide */
+	qx = fx_div_q16(px, z);
+    qy = fx_div_q16(py, z);
+
+    *sx = (320 / 2) + (qx >> 16);
+    *sy = (200 / 2) - (qy >> 16);
+}
+
+void wire_draw_mesh_edges(const MeshCVG1 *m, const int *sx, const int *sy, Surface8 *s, unsigned char c)
+{
+    u32 i;
+    for (i = 0; i < (u32)m->index_count; i += 3)
+    {
+        u16 i0 = m->indices[i + 0], i1 = m->indices[i + 1], i2 = m->indices[i + 2];
+        wire_line(s, sx[i0], sy[i0], sx[i1], sy[i1], c);
+        wire_line(s, sx[i1], sy[i1], sx[i2], sy[i2], c);
+        wire_line(s, sx[i2], sy[i2], sx[i0], sy[i0], c);
+    }
+}
+
+/* signed twice-area of 2D triangle (screen space) */
+static inline long tri_area2(int x0, int y0, int x1, int y1, int x2, int y2)
+{
+    return (long)(x1 - x0) * (long)(y2 - y0) - (long)(y1 - y0) * (long)(x2 - x0);
+}
+
+/* Draw only front-facing triangles:
+ * ccw_front = 1  -> CCW is front (area2 > 0)
+ * ccw_front = 0  -> CW  is front (area2 < 0)
+ */
+void wire_draw_mesh_edges_culled(const MeshCVG1 *m, const int *sx, const int *sy,
+                                 Surface8 *s, unsigned char c, int ccw_front)
+{
+    u32 i;
+    for (i = 0; i < (u32)m->index_count; i += 3u)
+    {
+        u16 i0 = m->indices[i + 0], i1 = m->indices[i + 1], i2 = m->indices[i + 2];
+
+        int x0 = sx[i0], y0 = sy[i0];
+        int x1 = sx[i1], y1 = sy[i1];
+        int x2 = sx[i2], y2 = sy[i2];
+
+        long a2 = tri_area2(x0, y0, x1, y1, x2, y2);
+
+        /* Degenerate or back-facing? skip it. */
+        if (a2 == 0)
+            continue;
+        if (ccw_front)
+        {
+            if (a2 < 0)
+                continue;
+        } /* CCW visible */
+        else
+        {
+            if (a2 > 0)
+                continue;
+        } /* CW  visible */
+
+        wire_line(s, x0, y0, x1, y1, c);
+        wire_line(s, x1, y1, x2, y2, c);
+        wire_line(s, x2, y2, x0, y0, c);
+    }
+}
