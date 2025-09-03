@@ -1,7 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include "cv_midi.h"
+#include "midi\midi.h"
 
 /* tiny send helpers */
 static void midi_send(u8 b)                         { mpu_write_data(MPU_BASE, b); }

@@ -5,10 +5,10 @@
 .model flat, C
 
 public  vga_set_palette256
-public  vga_blit
+public  vga_blit_8
 public  vsync_wait
 
-code.
+.code
 ; void vga_set_palette256(unsigned char* pDac);
 ; Sets the 256-color VGA palette from a 768-byte RGB array at pDac.
 vga_set_palette256 proc pDac:dword
@@ -45,8 +45,8 @@ r:
     ret
 vsync_wait endp
 
-; void vga_blit(const void* src, unsigned long nbytes);
-vga_blit proc src:dword, nbytes:dword
+; void vga_blit_8(const void* src, unsigned long nbytes);
+vga_blit_8 proc src:dword, nbytes:dword
     pushad
     push    es
 
@@ -81,4 +81,6 @@ vga_blit proc src:dword, nbytes:dword
     pop     es
     popad
     ret
-vga_blit endp
+vga_blit_8 endp
+
+end

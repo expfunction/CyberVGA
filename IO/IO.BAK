@@ -1,6 +1,5 @@
 #ifndef IO_H
 #define IO_H
-#include "CORE\TYPES.H"
 
 // Key definitions
 #define KEY_LEFT 0x4B

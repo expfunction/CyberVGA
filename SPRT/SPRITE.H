@@ -1,7 +1,6 @@
 #ifndef CV_SPRIT_H
 #define CV_SPRIT_H
 
-#include <stdio.h>
 #include "CORE\TYPES.h"
 
 typedef struct
