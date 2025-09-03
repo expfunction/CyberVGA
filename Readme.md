@@ -1,6 +1,6 @@
 # CyberVGA Engine
 
-MS‑DOS Mode 13h (320×200×8bpp) software 3D and rendering primitives in clean, portable C (C89). CyberVGA targets retro authenticity: it builds with Borland/Turbo C++ 3.x and runs well under DOSBox or on period hardware.
+MS‑DOS Mode 13h (320×200×8bpp) software 3D and rendering primitives in clean, portable C (C89). CyberVGA targets retro authenticity: it builds with Borland/Turbo C++ 4.5 (or above) and runs well under DOSBox or on period hardware.
 
 This README reflects the current source layout (CORE, RNDR, IO, MESH, SPRT, GFX, MIDI) and the presence of low‑level VGA assembly support (CV_HW.ASM).
 
@@ -89,7 +89,7 @@ Conceptually, an application uses:
 ### Prerequisites
 
 - A DOS‑era C compiler:
-  - Borland C++ 3.1 (recommended) or Turbo C++ 3.0
+  - Borland C++ 4.5 + PowerPack (must have) 
   - OpenWatcom 2.x (16‑bit DOS target) — may need small portability shims
 - DOSBox (or real DOS hardware/VM) to run the executable
 
@@ -168,35 +168,7 @@ Tips:
 
 A minimal loop using the engine’s API:
 
-```c
-#include "cybervga.h"
-#include "cv_math.h"
-#include "cv_renderer.h"
-
-int main(void) {
-    Byte far* screenBuffer;
-
-    cv_set_vga_mode();                 /* INT 10h set mode 13h */
-    screenBuffer = (Byte far*)farmalloc(CV_SCREENRES);
-    if (!screenBuffer) { cv_set_text_mode(); return 1; }
-
-    cv_make_default_palette();         /* Load DAC with a palette */
-    cv_init_trig();                    /* Prepare trig lookups */
-
-    while (!bioskey(1)) {              /* Until a key is pressed */
-        _fmemset(screenBuffer, 0, CV_SCREENRES);
-
-        /* ... math: rotate, project ... */
-        /* ... render: cv_putpixel/cv_draw_line ... */
-
-        _fmemcpy(VGA, screenBuffer, CV_SCREENRES);  /* Flip to VRAM */
-    }
-
-    farfree(screenBuffer);
-    cv_set_text_mode();                /* Restore text mode */
-    return 0;
-}
-```
+///// c main will be written here
 
 Key points:
 - Draw into an off‑screen buffer to avoid tearing.
@@ -286,12 +258,10 @@ Integration:
 
 - Video mode: 320×200, 256 colors (Mode 13h)
 - Framebuffer: linear 64,000 bytes (one byte per pixel)
-- Memory model: Large (`-ml`) to allow far data and `farmalloc`
-- Far pointers: Many routines operate on `Byte far*`
+- Memory model: Large (`-ml`) (DPMI32) 
 - Palette/DAC: Abstracted writes to ports 0x3C8/0x3C9
 
 Portability:
-- Borland `farmalloc`, `_fmemcpy`, `_fmemset` appear in examples.
 - Other compilers may need aliases or small substitutions.
 
 ---
@@ -308,7 +278,7 @@ Portability:
 
 ## File Formats
 
-- .CVG — Engine assets used by the sample program (e.g., `CBE.CVG`, `CUBE.CVG`). These hold simple data consumed by the demo; inspect the corresponding loader/usage in the source tree for exact structure.
+- .CVG — Mesh asset type used by the sample program (e.g., `CBE.CVG`, `CUBE.CVG`). These hold simple data consumed by the demo; inspect the corresponding loader/usage in the source tree for exact structure.
 
 See also:
 - Palette techniques and examples: ./PaletteTechniques.md
@@ -317,10 +287,10 @@ See also:
 
 ## Roadmap
 
-- RNDR: triangles, spans, solid fills, texture mapping, Z handling
-- CORE: palette fades/cycling utilities, LUT helpers
+- RNDR: triangles, spans, solid fills, texture mapping, Z handling, camera abstraction, matrix utilities
+- CORE: fixed point maths, LUT helpers, hardware interrupt maps
 - IO: keyboard + mouse, text, menus, debug HUD
-- MESH: camera abstraction, matrix utilities
+- MESH: cvg type definitions and methods for all usage
 - ASM: optional routines for hotspots and VSYNC
 
 ---
