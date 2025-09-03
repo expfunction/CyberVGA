@@ -1,11 +1,14 @@
 #include <string.h>
 #include <dos.h>
-#include "gfx\vga.h"
+#include "GFX\VGA.H"
 
-/* ASM from your files */
-void vga_blit(const void *src, u32 nbytes);             /* CV_BLIT.ASM */
-void vga_set_palette256(const unsigned char *dac3x256); /* CV_HW.ASM   */
-void vsync_wait(void);                                  /* CV_HW.ASM   */
+void back_draw_border(u8 *back)
+{
+    int x, y;
+    for (y = 0; y < SCREEN_H; y++)
+        for (x = 0; x < SCREEN_W; x++)
+            back[y * SCREEN_W + x] = 0; /* black */
+}
 
 void vga_set_mode13h(void)
 {
@@ -14,6 +17,7 @@ void vga_set_mode13h(void)
     r.h.al = 0x13;
     int386(0x10, &r, &r);
 }
+
 void vga_reset_text(void)
 {
     union REGS r;
@@ -21,8 +25,8 @@ void vga_reset_text(void)
     r.h.al = 0x03;
     int386(0x10, &r, &r);
 }
-void vga_blit_8(const unsigned char *buf)
+void vga_blit(const u8 *buf)
 {
     /* ALWAYS use your ASM path; no DPMI 0x0800 mapping, no gating */
-    vga_blit(buf, 64000UL); /* copies to A000:0000 every frame */
+    vga_blit_8(buf);
 }

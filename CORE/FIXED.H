@@ -1,6 +1,6 @@
 #ifndef FIXED_H
 #define FIXED_H
-#include "mesh\CVG1.H"
+#include "CORE\TYPES.H"
 
 /* Q16.16 basics */
 #define FX_FROM_INT(x) ((i32)((x) << 16))

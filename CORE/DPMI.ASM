@@ -1,5 +1,5 @@
-; cv_glue.asm — TASM32 glue for Borland PowerPack (32-bit DPMI)
-; Build:  tasm32 /ml /m3 cv_glue.asm
+; cv_dpmi.asm TASM32 DPMI glue for Borland PowerPack (32-bit DPMI)
+; Build:  tasm32 /ml /m3 cv_dpmi.asm
 
 .386
 .model flat, C
@@ -35,7 +35,8 @@ rm_ss    dw ?
 
 .code
 
-; map physical -> linear
+; void* dpmi_map_physical(void* phys, unsigned long size);
+; Maps physical memory into linear address space; returns linear address or NULL on failure.
 dpmi_map_physical proc uses ebx ecx esi edi eax, phys:dword, size:dword
     mov ax,0800h
     xor ecx,ecx
@@ -49,7 +50,8 @@ mp_fail: xor eax,eax
     ret
 dpmi_map_physical endp
 
-; unmap linear
+; void dpmi_unmap_physical(void* linear);
+; AX=0801h  EAX = linear address returned by 0800h
 dpmi_unmap_physical proc uses eax, linear:dword
     mov ax,0801h
     mov eax,[linear]
@@ -57,16 +59,13 @@ dpmi_unmap_physical proc uses eax, linear:dword
     ret
 dpmi_unmap_physical endp
 
-; void dpmi_unmap_physical(void* linear)
-; AX=0801h  EAX = linear address returned by 0800h
-;dpmi_unmap_physical proc uses eax, linear:dword
-;    mov ax, 0801h
-;    mov eax, [linear]
-;    int 31h
-;    ret
-;dpmi_unmap_physical endp
-
-; void dpmi_rm_int(u16 intno, u32*EAX,u32*EBX,u32*ECX,u32*EDX,u32*ESI,u32*EDI,u16*DS,u16*ES,u16*FLAGS)
+; void_dpmi_rm_int( unsigned short intno, 
+;                    unsigned long* pEAX, unsigned long* pEBX,
+;                    unsigned long* pECX, unsigned long* pEDX,
+;                    unsigned long* pESI, unsigned long* pEDI,
+;                    unsigned short* pDS, unsigned short* pES,
+;                    unsigned short* pFL );
+; Simulates a real-mode interrupt call from protected mode.
 dpmi_rm_int proc uses esi edi ebx ecx edx eax, \
   intno:word, pEAX:dword, pEBX:dword, pECX:dword, pEDX:dword, \
   pESI:dword, pEDI:dword, pDS:dword, pES:dword, pFL:dword
@@ -146,9 +145,9 @@ dpmi_rm_int proc uses esi edi ebx ecx edx eax, \
     ret
 dpmi_rm_int endp
 
-; u16 dpmi_make_phys_selector(u32 physBase, u32 sizeBytes)
-; Creates a selector aliasing the real-mode segment at physBase (must be paragraph aligned).
-; Works with VGA: physBase=A0000h, sizeBytes=65536.
+; u16 dpmi_make_phys_selector(u32 physBase, u32 sizeBytes);
+; Returns a selector for accessing physical memory at physBase of size sizeBytes,
+; or 0 on failure. physBase must be paragraph-aligned (16-byte aligned).
 dpmi_make_phys_selector proc uses eax ebx ecx edx, physBase:dword, sizeBytes:dword
 
     ; require paragraph alignment (physBase % 16 == 0)
@@ -179,7 +178,7 @@ dpmi_make_phys_selector proc uses eax ebx ecx edx, physBase:dword, sizeBytes:dwo
     mov cx, bx
     mov dx, 0C093h             ; present | DPL0 | 32-bit | RW data
     int 31h
-    ; (ignore CF here—many hosts already set suitable AR)
+    ; (ignore CF hereï¿½many hosts already set suitable AR)
 
     mov ax, bx                 ; return selector
     ret
@@ -193,8 +192,8 @@ failed:
     ret
 dpmi_make_phys_selector endp
 
-; void dpmi_memcpy_to_sel(u16 sel, u32 dstOfs, const void* src, u32 nbytes)
-; NOTE: sel is passed as a 32-bit stack arg; we take its low 16 bits.
+; void dpmi_memcpy_to_sel(unsigned short sel32, unsigned long dstOfs, const void* src, unsigned long nbytes);
+; Copies nbytes from src (linear) to sel32:dstOfs (selector:offset).
 dpmi_memcpy_to_sel proc uses esi edi ecx edx eax, sel32:dword, dstOfs:dword, src:dword, nbytes:dword
     push es
     mov ax, WORD PTR [sel32]

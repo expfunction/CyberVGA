@@ -1,6 +1,6 @@
 #include <string.h>
-#include "rndr\wire.h"
-#include "core\fixed.h"
+#include "RNDR\WIRE.H"
+#include "CORE\FIXED.H"
 
 #define SCR_W 320
 #define SCR_H 200

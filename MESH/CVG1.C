@@ -4,7 +4,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include "mesh\cvg1.h"
+#include "MESH\CVG1.H"
+
 int read_exact(void *dst, size_t size, size_t count, FILE *fp)
 {
     return (fread(dst, size, count, fp) == count) ? 1 : 0;

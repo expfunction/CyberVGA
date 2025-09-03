@@ -1,10 +1,9 @@
-; cv_hw.asm  VGA, Keyboard, MIDI helpers for Borland PowerPack (32-bit)
+; cv_hw.asm Hardware keyboard, mouse, MIDI helpers for Borland PowerPack (32-bit)
 ; Build: tasm32 /ml /m3 cv_hw.asm
 
 .386
 .model flat, C
-public  vga_set_palette256
-public  vsync_wait
+
 public  kbd_get_byte
 public  kbd_bda_pop_word
 public  mpu_wait_ready
@@ -13,42 +12,6 @@ public  mpu_write_cmd
 public  mpu_init_uart
 
 .code
-; void vga_set_palette256(unsigned char* pDac);
-; Sets the 256-color VGA palette from a 768-byte RGB array at pDac.
-vga_set_palette256 proc pDac:dword
-    pushad
-    mov     esi, [pDac]
-    mov     dx, 03C8h
-    xor     al, al
-    out     dx, al
-    inc     dx            ; 03C9h
-    mov     ecx, 256*3
-@@L: lodsb
-    out     dx, al
-    loop    @@L
-    popad
-    ret
-vga_set_palette256 endp
-
-; void vsync_wait(void);
-; Polls VGA status (port 3DAh bit 3) wait not-in-retrace, then retrace start.
-vsync_wait proc
-    push edx
-    mov  dx,03DAh
-; wait for end of current retrace
-nr: 
-     in al,dx
-     test al,08h
-     jnz  nr
-; wait for next retrace to begin
-r:  
-     in   al,dx
-     test al,08h
-     jz   r
-    pop  edx
-    ret
-vsync_wait endp
-
 ; int kbd_get_byte(unsigned char* outByte);
 ; Returns 1 if a byte was read from port 0x60 (keyboard), else 0.
 kbd_get_byte proc outp:dword

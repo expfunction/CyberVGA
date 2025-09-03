@@ -1,8 +1,8 @@
 #ifndef CAMER_H
 #define CAMER_H
 
-#include "mesh\CVG1.H"  /* i32,u32 */
-#include "core\FIXED.H" /* fx_sin/fx_cos, fx_mul_q16/fx_div_q16, FX_FROM_INT */
+#include "MESH\CVG1.H"  /* i32,u32 */
+#include "CORE\FIXED.H" /* fx_sin/fx_cos, fx_mul_q16/fx_div_q16, FX_FROM_INT */
 
 typedef struct
 {

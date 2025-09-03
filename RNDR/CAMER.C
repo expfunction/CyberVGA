@@ -1,5 +1,5 @@
 #include "RNDR\CAMER.H"
-#include "CORE\fixed.h"
+#include "CORE\FIXED.H"
 
 /* yaw (Y), pitch (X), roll (Z) — right-handed; forward is +Z in camera space */
 void cam_build_basis(const Camera *cam, CamBasis *o)
@@ -122,24 +122,24 @@ void cam_build_basis(const Camera *cam, CamBasis *o)
 /* f = (W/2) / tan(FOV/2) — all in 16.16, FOV in degrees * 65536 */
 i32 cam_focal_from_fov_deg(int screen_w, i32 fov_deg_q16)
 {
-	i32 half_deg, half_rad, hw_q16,t;
-	/* half-angle in radians (Q16.16) */
-	half_deg = fov_deg_q16 >> 1;
-	half_rad = fx_deg_to_rad(half_deg);
+    i32 half_deg, half_rad, hw_q16, t;
+    /* half-angle in radians (Q16.16) */
+    half_deg = fov_deg_q16 >> 1;
+    half_rad = fx_deg_to_rad(half_deg);
 
-	/* t = tan(half_FOV) in Q16.16 (pure integer) */
-	t = fx_tan(half_rad);
-	if (t <= 0)
-		t = 1; /* guard */
+    /* t = tan(half_FOV) in Q16.16 (pure integer) */
+    t = fx_tan(half_rad);
+    if (t <= 0)
+        t = 1; /* guard */
 
-	/* f = (W/2) / tan(half_FOV) → Q16.16 pixels */
-	hw_q16 = FX_FROM_INT(screen_w / 2);
-	return fx_div_q16(hw_q16, t);
+    /* f = (W/2) / tan(half_FOV) → Q16.16 pixels */
+    hw_q16 = FX_FROM_INT(screen_w / 2);
+    return fx_div_q16(hw_q16, t);
 }
 
 /* Move camera by local offsets (dx,dy,dz) in camera space (Right, Up, Forward) */
 void cam_move_local(Camera *cam, const CamBasis *b,
-						   i32 dx, i32 dy, i32 dz)
+                    i32 dx, i32 dy, i32 dz)
 {
     /* world delta = Right*dx + Up*dy + Fwd*dz (all Q16.16) */
     i32 mx = fx_mul_q16(b->r00, dx) + fx_mul_q16(b->r01, dy) + fx_mul_q16(b->r02, dz);

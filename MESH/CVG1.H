@@ -1,4 +1,5 @@
 /* cvg1.h — C89, Borland C++ 4.5 + PowerPack */
+#include "CORE/TYPES.h"
 
 #ifndef CVG1_H
 #define CVG1_H
@@ -7,14 +8,6 @@
 extern "C"
 {
 #endif
-
-    typedef unsigned char u8;
-    typedef signed char i8;
-    typedef unsigned short u16;
-    typedef signed short i16;
-    typedef unsigned long u32;
-    typedef signed long i32;
-
 /* Flags */
 #define CVG_HAS_UV 0x01
 #define CVG_HAS_NORMALS 0x02
